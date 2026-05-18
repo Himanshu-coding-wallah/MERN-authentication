@@ -47,9 +47,56 @@ export const register = async (req, res)=>{
             maxAge: 7*24*60*60*1000
         })
 
-        res.status(201).json({
-            message: "user is created",
-            user: user
+        return res.status(201).json({
+            message: "user registered successfully",
+        })
+
+    } catch (error) {
+        console.log(error)
+    }
+
+}
+
+export const login = async (req, res)=>{
+    const {email, password} = req.body
+
+    if(!email || !password){
+        return res.json({
+            message: "please fill the details"
+        })
+    }
+
+    try {
+        const user = await UserModel.findOne({email})
+    
+        if(!user){
+            return res.json({
+                message: "user do not exist"
+            })
+        }
+
+        const isMatch = await bcrypt.compare(password, user.password)
+
+        if(!isMatch){
+            return res.json({
+                message: "wrong password"
+            })
+        }
+
+        const token = jwt.sign(
+            {id: user._id},
+            process.env.JWT_SECRET_KEY,
+            {expiresIn: 7*24*60*60*1000}
+        )
+
+        res.cookie("token", token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === ' production ',
+            sameSite: process.env.NODE_ENV === 'production'? 'none': 'strict'
+        })
+
+        return res.json({
+            message: "user is loggedin successfully"
         })
 
     } catch (error) {
